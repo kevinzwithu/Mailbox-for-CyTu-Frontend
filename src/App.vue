@@ -1,17 +1,21 @@
 <template>
     <div id="app">
+        <div class="DEBUG"></div>
         <div ref="lavContainer"></div>
         <div class="readme animated loading" v-if="isReadmeActive"
              :class="{ finished: isDialogFinished }">
             <div class="readme-title animated" :class="{ fadeOut: isDialogFinished }">
                 <div v-for="(page, i) in pages" :key="i" class="animated fadeIn delay-1s"
-                     :class="{ hidden: currentPage !== i }" :ref="'title'+i">
+                     :class="{ hidden: currentPage !== i }"
+                     :ref="'title'+i">
                     {{page.title}}
                 </div>
             </div>
-            <div class="readme-text animated" :class="{ fadeOut: isDialogFinished }">
-                <div v-for="(page, i) in pages" :key="i" class="animated fadeIn delay-2s"
-                     :class="{ hidden: currentPage !== i }" :ref="'text'+i">
+            <div class="readme-text animated" @scroll="scrollDialogText($event)"
+                 :class="{ fadeOut: isDialogFinished }" ref="readmeText">
+                <div v-for="(page, i) in pages" :key="i" class="animated fadeIn"
+                     :class="{ 'delay-1s': !page.title.length, 'delay-2s': page.title.length, hidden: currentPage !== i }"
+                     :ref="'text'+i">
                     <span v-html="page.content"></span>
                 </div>
                 <div class='finish-btn animated delay-4s fadeIn slow'
@@ -20,12 +24,43 @@
             </div>
             <div class="dots animated" :class="{ fadeOut: isDialogFinished }">
                 <div class="dots-box animated delay-3s fadeIn">
-                    <div v-for="(page, i) in pages" :key="i"
+                    <div v-for="(_, i) in pages" :key="i"
                          class="dot" :ref="'dot'+i"
                          :class="{'dot-active': currentPage === i, 'dot-hidden': maxPage < (i-1)}"
                          @click="changeCurrentPageTo(i)"></div>
                 </div>
             </div>
+        </div>
+        <div class="secret animated fadeIn delay-1s" v-if="isSecretActive">
+            <div class="secret-input animated" :class="{ fadeOut: isFormSubmit }">
+                <label for="secret"></label>
+                <textarea placeholder="（请在这里，讲述你的故事吧。）" maxlength="10000"
+                          v-model="secretText" id="secret" autofocus="autofocus"></textarea>
+            </div>
+            <div class="info-inputs animated" :class="{ fadeOut: isFormSubmit }">
+                <div class="info-input animated fadeIn delay-5s">
+                    <label for="userName">或许你想留下一个称呼吗？</label>
+                    <input type="text" name="userName" id="userName"/>
+                </div>
+                <div class="info-input animated fadeIn delay-4s">
+                    <label for="userContact">你的联系方式（邮箱或国内手机号码）</label>
+                    <input type="text" name="userContact" id="userContact"/>
+                </div>
+                <div class="info-input with-btn animated fadeIn delay-3s">
+                    <label class="animated fast fadeIn"
+                           v-if="canSubmit">
+                        {{secretLengthStr}}</label>
+                    <div class="submit-button" :class="{ active: canSubmit }">
+                        <p v-if="canSubmit" @click="submit">提交</p>
+                        <p v-if="!canSubmit">
+                            {{secretLengthStr}} / {{minSecretTextLength}}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="finish-text animated fadeIn delay-5s" v-if="isFormSubmit">
+            <p>我们已经收到您的秘密。</p>
+            <div class="new-letter" @click="createNewLetter">再投一封</div>
         </div>
     </div>
 </template>
@@ -50,11 +85,17 @@
         },
         data() {
             return {
+                minSecretTextLength: 100,
                 changePageWaitPeriod: 5000,
                 dialogEnterTime: 6500,
-                dialogExitTime: 10500,
+                dialogExitTime: 10600,
+                formEnterTime: 17000,
+                formExitTime: 18500,
                 isReadmeActive: false,
+                isSecretActive: false,
                 isDialogFinished: false,
+                isFormSubmit: false,
+                isScrolledToBottom: true,
                 canUserHandle: false,
                 currentPage: -1,
                 maxPage: -1,
@@ -80,29 +121,60 @@
                             "<li>叙述逻辑混乱，导致理解困难的；</li>" +
                             "<li>用制作组掌握范围之外的语种叙述的。</li></ul></li>" +
                             "<li>如果您的故事涉及任何在现实生活中发生过的违法犯罪活动，希望您三思后再投稿。设立这条规定的理由可以参考经典辩论题目“神父听了杀人犯的告解后该不该报警”——当然我们不是自比神父，只是意在说明我们不希望陷入这种两难境地。请您务必给予理解。</li>" +
-                            "<li>为了尽量收集到有意义的投稿，并且保证投稿中有一定细节可供创作参考，我们设置了最低字数限制（100字），请您尽量不要讲得太简略。同时，恶意灌水（譬如无意义的文字组合、乱码、表白信、催稿信等与征集主题不相关的内容）是不允许的。</li>" +
+                            `<li>为了尽量收集到有意义的投稿，并且保证投稿中有一定细节可供创作参考，我们设置了最低字数限制（${this.minSecretTextLength}字），请您尽量不要讲得太简略。同时，恶意灌水（譬如无意义的文字组合、乱码、表白信、催稿信等与征集主题不相关的内容）是不允许的。</li>` +
                             "<li>为了方便后续联系，建议您尽量留下一个不致暴露自己身份的联系方式（仅支持邮箱及中国大陆手机号码）。您也可以选择不留任何联系方式。</li>" +
                             "</ol>"
                     }, {
+                        title: "收到您的投稿后，我们承诺:",
+                        content: "<ol>" +
+                            "<li>我们将逐条仔细阅读所有投稿，您不必担心自己的故事会湮没在其他投稿中。</li>" +
+                            "<li>您的投稿原文及您留下的联系方式等信息将被永久封存，不会以任何方式公开。如有必要，我们也会采取其他手段来保障整个投信过程的绝对私密性。</li>" +
+                            "<li>如果您的投稿被选为创作及后期宣发材料的题材，我们将会对您的投稿作一定程度的艺术加工，在不妨害创作自由的基础上，保证您的身份不被相关者轻易猜到。" +
+                            "<li>如果您的投稿被选为创作及后期宣发材料的题材，同时您选择了留下有效联系方式，开售后我们将通过您的联系方式，为您发送一份免费的激活码以表示谢意。</li>" +
+                            "<li>为了尽量收集到有意义的投稿，并且保证投稿中有一定细节可供创作参考，我们设置了最低字数限制（100字），请您尽量不要讲得太简略。同时，恶意灌水（譬如无意义的文字组合、乱码、表白信、催稿信等与征集主题不相关的内容）是不允许的。</li>" +
+                            "<li>您的讲述对我们而言绝不是可有可无的参考，相反，每一个秘密都将会被我们最大化地利用，最终呈现出的绝大多数故事情节都将来自您和其他人的投稿。</li>" +
+                            "</ol>"
+                    }, {
                         title: "",
-                        content: "本使用说明之版权以及其修改权、更新权及最终解释权均属 Kevinz 个人所有。 Kevinz 及制作组其他成员保留在未经事先声明的情况下修改本声明的权利。<br />如您仍有本使用说明未能解答的问题，可以通过网站给出的联系方式询问 Kevinz 本人。"
+                        content: "本使用说明之版权以及其修改权、更新权及最终解释权均属 Kevinz 个人所有。<br /> Kevinz 及制作组其他成员保留在未经事先声明的情况下修改本声明的权利。<br />如您仍有本使用说明未能解答的问题，可以通过网站给出的联系方式询问 Kevinz 本人。"
                     }, {
                         title: "",
                         content: "十分感谢您的耐心阅读。<br />请开始讲您的故事吧，我们在听。"
                     }
-                ]
+                ],
+                userName: "",
+                userContact: "",
+                secretText: ""
             }
         },
         watch: {
             currentPage(val) {
-                if (val > this.maxPage) {
-                    setTimeout(() => {
-                        this.maxPage = val;
-                    }, this.changePageWaitPeriod);
-                }
                 setTimeout(() => {
+                    if (this.$refs.readmeText) {
+                        this.$refs.readmeText.scrollTop = 0;
+                        this.isScrolledToBottom =
+                            (this.$refs.readmeText.scrollHeight <= this.$refs.readmeText.clientHeight);
+                    }
+                    if (this.isScrolledToBottom) {
+                        this.updatePagesLength(val);
+                    }
                     this.canUserHandle = true;
-                }, 1000); // to wait the delay-1s
+                }, 1000);
+            }
+        },
+        computed: {
+            secretTextLength() {
+                return this.secretText.replace(/[\r\n|\s]*/g, "").length
+            },
+
+            canSubmit() {
+                return this.secretTextLength >= this.minSecretTextLength
+            },
+
+            secretLengthStr() {
+                return this.canSubmit
+                    ? this.secretTextLength
+                    : (Array(3).join('0') + this.secretTextLength).slice(-3);
             }
         },
         methods: {
@@ -116,8 +188,15 @@
             displayDialog(waitTime) {
                 setTimeout(() => {
                     this.anim.pause();
-                    this.currentPage++;
                     this.isReadmeActive = true;
+                    this.currentPage++;
+                }, waitTime)
+            },
+
+            displaySecretForm(waitTime) {
+                setTimeout(() => {
+                    this.anim.pause();
+                    this.isSecretActive = true;
                 }, waitTime)
             },
 
@@ -127,13 +206,29 @@
                     this.canUserHandle = false;
                     this.$refs[`dot${cp}`][0].classList.remove("dot-active");
                     this.$refs[`text${cp}`][0].classList.remove("delay-2s");
+                    this.$refs[`text${cp}`][0].classList.remove("delay-1s");
                     this.$refs[`title${cp}`][0].classList.remove("delay-1s");
                     this.$refs[`text${cp}`][0].classList.add("fadeOut");
                     this.$refs[`title${cp}`][0].classList.add("fadeOut");
                     setTimeout(() => {
                         this.currentPage = i;
+                        this.$refs.readmeText.scrollTop = 0;
                     }, 1000);
                 }
+            },
+
+            scrollDialogText(ev) {
+                if (this.isReadmeActive) {
+                    const e = ev.target;
+                    if (e.scrollHeight - 5 <= e.scrollTop + e.clientHeight)
+                        this.updatePagesLength(this.currentPage, 0);
+                }
+            },
+
+            updatePagesLength(val, period = this.changePageWaitPeriod) {
+                (val > this.maxPage) && setTimeout(() => {
+                    this.maxPage = val;
+                }, period);
             },
 
             finishDialog() {
@@ -144,6 +239,21 @@
                     this.isReadmeActive = false;
                     this.canUserHandle = true;
                 }, 2000);
+                this.displaySecretForm(this.formEnterTime - this.dialogExitTime);
+            },
+
+            submit() {
+                this.canUserHandle = false;
+                this.anim.goToAndPlay(this.formExitTime);
+                this.isFormSubmit = true;
+                setTimeout(() => {
+                    this.isSecretActive = false;
+                    this.canUserHandle = true;
+                }, 1000);
+            },
+
+            createNewLetter() {
+                alert("还没做")
             }
         }
     }
@@ -166,6 +276,19 @@
         right 0
         position absolute
 
+    .DEBUG
+        display none
+        position absolute
+        z-index 999
+        top -140px
+        bottom 0
+        left 0
+        right 0
+        width 100%
+        height 100%
+        background red
+        background-size cover
+
     .readme
         position absolute
         top 20%
@@ -176,6 +299,8 @@
         border-radius 150px
         animation anim 1s cubic-bezier(.46, 0, .54, 1) forwards
         -webkit-anismation anim 1s cubic-bezier(.46, 0, .54, 1) forwards
+        -moz-animation anim 1s cubic-bezier(.46, 0, .54, 1) forwards
+        -o-anismation anim 1s cubic-bezier(.46, 0, .54, 1) forwards
         display flex
         justify-content space-between
         align-items center
@@ -185,6 +310,8 @@
         &.finished
             animation anim-reverse 2s cubic-bezier(.46, 0, .54, 1) forwards !important
             -webkit-animation anim-reverse 2s cubic-bezier(.46, 0, .54, 1) forwards !important
+            -moz-animation anim-reverse 2s cubic-bezier(.46, 0, .54, 1) forwards !important
+            -o-animation anim-reverse 2s cubic-bezier(.46, 0, .54, 1) forwards !important
 
             .finish-btn, .finish-btn:hover
                 background red-gradient !important
@@ -242,6 +369,7 @@
                 &.dot-active
                     background white
                     transition 1s
+                    cursor inherit
 
                 &.dot-hidden
                     opacity 0
@@ -254,24 +382,142 @@
             margin 40px 0
             font-size 15px
 
-        @keyframes anim
-            from
-                -webkit-transform scale3d(1, 0, 1)
-                transform scale3d(1, 0, 1)
-            to
-                -webkit-transform scale3d(1, 1, 1)
-                transform scale3d(1, 1, 1)
+    .secret
+        position absolute
+        width 66%
+        height 74%
+        top 0
+        bottom 0
+        left 7px
+        right 0
+        margin-left 17%
+        margin-top 8%
+        z-index 1000
+        display flex
+        flex-direction column
+        align-items stretch
 
-        @keyframes anim-reverse
-            from
-                -webkit-transform scale3d(1, 1, 1)
-                transform scale3d(1, 1, 1)
+        & > .secret-input
+            flex 9 0 auto
 
-            50%
-                -webkit-transform scale3d(1, 1, 1)
-                transform scale3d(1, 1, 1)
+            textarea
+                width 100%
+                height 100%
+                font-size 18px
+                background none
+                border none
+                outline none
+                line-height 38px
+                color cadetblue
+                transition .5s
 
-            to
-                -webkit-transform scale3d(1, 0, 1)
-                transform scale3d(1, 0, 1)
+                &:focus
+                    color white
+                    transition .5s
+
+        & > .info-inputs
+            flex 1 0 auto
+            display flex
+            flex-direction row
+            align-items flex-end
+            justify-content space-between
+            width 100%
+
+            label
+                color darkcyan
+                font-size 12px
+                margin 5px 0
+
+            & > .info-input
+                flex 1 0 auto
+                display flex
+                flex-direction column
+                align-items flex-start
+                margin 0 10px
+
+                &.with-btn
+                    flex 0 1 auto
+                    margin 0
+
+                input
+                    width 80%
+                    outline none
+                    border none
+                    background rgba(0, 0, 0, .4)
+                    font-size 20px
+                    padding 8px 16px
+                    color rgba(255, 255, 255, .5)
+                    transition .5s
+
+                    &:focus
+                        color white
+                        transition .5s
+
+                .submit-button
+                    background none
+                    padding 0 10px
+                    height 39px
+                    transition .5s background
+
+                    p
+                        margin 10px 10px 0 10px
+                        font-size 14px
+                        color darkcyan
+                        transition .5s color
+
+                    &.active
+                        padding 0 26px
+                        background darkcyan
+                        transition .5s background
+                        cursor pointer
+
+                        &:hover
+                            background darkred
+
+                        p
+                            margin-top 9px
+                            color gainsboro
+                            transition .5s color
+
+    .finish-text
+        position absolute
+        left 0
+        right 0
+        width 100%
+        bottom 10%
+        color darkcyan
+        font-size 14px
+        display flex
+        flex-direction row
+        align-items center
+        justify-content center
+
+        .new-letter
+            background cadetblue
+            color antiquewhite
+            cursor pointer
+            padding 10px 25px
+            margin 0 25px
+
+
+    @keyframes anim
+        from
+            -webkit-transform scale3d(1, 0, 1)
+            transform scale3d(1, 0, 1)
+        to
+            -webkit-transform scale3d(1, 1, 1)
+            transform scale3d(1, 1, 1)
+
+    @keyframes anim-reverse
+        from
+            -webkit-transform scale3d(1, 1, 1)
+            transform scale3d(1, 1, 1)
+
+        50%
+            -webkit-transform scale3d(1, 1, 1)
+            transform scale3d(1, 1, 1)
+
+        to
+            -webkit-transform scale3d(1, 0, 1)
+            transform scale3d(1, 0, 1)
 </style>
