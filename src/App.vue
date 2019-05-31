@@ -1,24 +1,30 @@
 <template>
     <div id="app">
         <div ref="lavContainer"></div>
-        <div class="readme animated" v-if="isReadmeActive">
-            <div class="readme-title">
+        <div class="readme animated loading" v-if="isReadmeActive"
+             :class="{ finished: isDialogFinished }">
+            <div class="readme-title animated" :class="{ fadeOut: isDialogFinished }">
                 <div v-for="(page, i) in pages" :key="i" class="animated fadeIn delay-1s"
                      :class="{ hidden: currentPage !== i }" :ref="'title'+i">
                     {{page.title}}
                 </div>
             </div>
-            <div class="readme-text">
+            <div class="readme-text animated" :class="{ fadeOut: isDialogFinished }">
                 <div v-for="(page, i) in pages" :key="i" class="animated fadeIn delay-2s"
                      :class="{ hidden: currentPage !== i }" :ref="'text'+i">
                     <span v-html="page.content"></span>
                 </div>
+                <div class='finish-btn animated delay-4s fadeIn slow'
+                     @click='finishDialog' v-if="currentPage === pages.length - 1">start
+                </div>
             </div>
-            <div class="dots animated delay-3s fadeIn">
-                <div v-for="(page, i) in pages" :key="i"
-                     class="dot" :ref="'dot'+i"
-                     :class="{'dot-active': currentPage === i, 'dot-hidden': maxPage < (i-1)}"
-                     @click="changeCurrentPageTo(i)"></div>
+            <div class="dots animated" :class="{ fadeOut: isDialogFinished }">
+                <div class="dots-box animated delay-3s fadeIn">
+                    <div v-for="(page, i) in pages" :key="i"
+                         class="dot" :ref="'dot'+i"
+                         :class="{'dot-active': currentPage === i, 'dot-hidden': maxPage < (i-1)}"
+                         @click="changeCurrentPageTo(i)"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -44,7 +50,11 @@
         },
         data() {
             return {
+                changePageWaitPeriod: 5000,
+                dialogEnterTime: 6500,
+                dialogExitTime: 10500,
                 isReadmeActive: false,
+                isDialogFinished: false,
                 canUserHandle: false,
                 currentPage: -1,
                 maxPage: -1,
@@ -88,7 +98,7 @@
                 if (val > this.maxPage) {
                     setTimeout(() => {
                         this.maxPage = val;
-                    }, 5000);
+                    }, this.changePageWaitPeriod);
                 }
                 setTimeout(() => {
                     this.canUserHandle = true;
@@ -99,7 +109,7 @@
             startToPlay(waitTime) {
                 setTimeout(() => {
                     this.anim.play();
-                    this.displayDialog(8000);
+                    this.displayDialog(this.dialogEnterTime);
                 }, waitTime);
             },
 
@@ -115,7 +125,6 @@
                 const cp = this.currentPage;
                 if ((i !== cp) && this.canUserHandle) {
                     this.canUserHandle = false;
-                    // console.log(this.$refs["title" + this.currentPage]);
                     this.$refs[`dot${cp}`][0].classList.remove("dot-active");
                     this.$refs[`text${cp}`][0].classList.remove("delay-2s");
                     this.$refs[`title${cp}`][0].classList.remove("delay-1s");
@@ -125,12 +134,25 @@
                         this.currentPage = i;
                     }, 1000);
                 }
+            },
+
+            finishDialog() {
+                this.anim.goToAndPlay(this.dialogExitTime);
+                this.canUserHandle = false;
+                this.isDialogFinished = true;
+                setTimeout(() => {
+                    this.isReadmeActive = false;
+                    this.canUserHandle = true;
+                }, 2000);
             }
         }
     }
 </script>
 
 <style lang="stylus">
+    red-gradient = linear-gradient(to right bottom, rgba(255, 0, 0, .6), rgba(255, 0, 0, .9))
+    cyan-gradient = linear-gradient(to right bottom, rgba(0, 255, 255, .6), rgba(0, 255, 255, .9))
+
     #app
         font-family 'Avenir', Helvetica, Arial, sans-serif
         -webkit-font-smoothing antialiased
@@ -148,28 +170,34 @@
         position absolute
         top 20%
         left 10%
-        translate transform(0, -50%)
         height calc(60% - 160px)
         width 66%
         background rgba(12, 15, 16, .9)
         border-radius 150px
-        animation anim cubic-bezier(.46, 0, .54, 1)
-        -webkit-animation anim cubic-bezier(.46, 0, .54, 1)
+        animation anim 1s cubic-bezier(.46, 0, .54, 1) forwards
+        -webkit-anismation anim 1s cubic-bezier(.46, 0, .54, 1) forwards
         display flex
         justify-content space-between
         align-items center
         flex-direction column
         padding 80px 7%
 
+        &.finished
+            animation anim-reverse 2s cubic-bezier(.46, 0, .54, 1) forwards !important
+            -webkit-animation anim-reverse 2s cubic-bezier(.46, 0, .54, 1) forwards !important
+
+            .finish-btn, .finish-btn:hover
+                background red-gradient !important
+
         & > div > div.hidden
             display none
 
-        .readme-title
+        & > .readme-title
             color white
             font-size 28px
             font-weight bold
 
-        .readme-text
+        & > .readme-text
             color rgba(255, 255, 255, .8)
             font-size 18px
             line-height 40px
@@ -186,35 +214,64 @@
                     & > ul > li
                         margin-bottom 0
 
-        .dots
+            .finish-btn
+                background cyan-gradient
+                border-radius 20px
+                padding 5px 30px
+                margin-top 60px
+                cursor pointer
+
+                &:hover
+                    background red-gradient
+
+
+        & > .dots > .dots-box
             display flex
             flex-direction row
 
-            .dot
+            & > .dot
                 border-radius 100%
                 height 10px
                 margin 0 30px
                 width @height
                 border 1px solid white
                 opacity 1
-                transition .5s
+                transition 1s
                 cursor: pointer
 
                 &.dot-active
                     background white
-                    transition .5s
+                    transition 1s
 
                 &.dot-hidden
                     opacity 0
-                    transition .5s
+                    transition 1s
                     cursor inherit
 
-    @keyframes anim
-        from
-            -webkit-transform scale3d(1, 0, 1)
-            transform scale3d(1, 0, 1)
-        to
-            -webkit-transform scale3d(1, 1, 1)
-            transform scale3d(1, 1, 1)
+    @media screen and (max-width: 1440px)
+        .readme > .readme-text
+            line-height 30px
+            margin 40px 0
+            font-size 15px
 
+        @keyframes anim
+            from
+                -webkit-transform scale3d(1, 0, 1)
+                transform scale3d(1, 0, 1)
+            to
+                -webkit-transform scale3d(1, 1, 1)
+                transform scale3d(1, 1, 1)
+
+        @keyframes anim-reverse
+            from
+                -webkit-transform scale3d(1, 1, 1)
+                transform scale3d(1, 1, 1)
+
+            50%
+                -webkit-transform scale3d(1, 1, 1)
+                transform scale3d(1, 1, 1)
+
+            to
+                -webkit-transform scale3d(1, 0, 1)
+                transform scale3d(1, 0, 1)
 </style>
