@@ -40,11 +40,11 @@
             <div class="info-inputs animated" :class="{ fadeOut: isFormSubmit }">
                 <div class="info-input animated fadeIn delay-5s">
                     <label for="userName">或许你想留下一个称呼吗？</label>
-                    <input type="text" name="userName" id="userName"/>
+                    <input type="text" name="userName" id="userName" v-model="userName" />
                 </div>
                 <div class="info-input animated fadeIn delay-4s">
                     <label for="userContact">你的联系方式（邮箱或国内手机号码）</label>
-                    <input type="text" name="userContact" id="userContact"/>
+                    <input type="text" name="userContact" id="userContact" v-model="userContact" />
                 </div>
                 <div class="info-input with-btn animated fadeIn delay-3s">
                     <label class="animated fast fadeIn"
@@ -58,7 +58,7 @@
                 </div>
             </div>
         </div>
-        <div class="finish-text animated fadeIn delay-5s" v-if="isFormSubmit">
+        <div class="finish-text animated fadeIn delay-5s" v-if="isFormSubmit" ref="finishText">
             <p>我们已经收到您的秘密。</p>
             <div class="new-letter" @click="createNewLetter">再投一封</div>
         </div>
@@ -102,7 +102,7 @@
                 pages: [
                     {
                         title: "邮箱设立的目的",
-                        content: "这个秘密邮箱是为音乐人Kevinz计划发行的“听后即焚”型数字音乐专辑搜集创作素材而设立的，<br />" +
+                        content: "这个秘密邮箱是为音乐人 Kevinz 计划发行的“听后即焚”型数字音乐专辑搜集创作素材而设立的。<br />" +
                             "您投递进邮箱里的秘密可能被选为制作的题材，<br />" +
                             "并通过影像加音乐的方式演绎为一段不可复现的欣赏体验。"
                     }, {
@@ -253,7 +253,17 @@
             },
 
             createNewLetter() {
-                alert("还没做")
+                this.anim.setDirection(-1);
+                this.anim.play();
+                this.secretText = "";
+                this.$refs.finishText.classList.remove("delay-5s");
+                this.$refs.finishText.classList.add("fadeOut");
+                setTimeout(() => {
+                    this.anim.pause();
+                    this.anim.setDirection(1);
+                    this.isFormSubmit = false;
+                    this.isSecretActive = true;
+                }, 7000);
             }
         }
     }
