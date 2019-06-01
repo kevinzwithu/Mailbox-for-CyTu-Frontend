@@ -35,25 +35,26 @@
             <div class="secret-input animated" :class="{ fadeOut: isFormSubmit }">
                 <label for="secret"></label>
                 <textarea placeholder="（请在这里，讲述你的故事吧。）" maxlength="10000"
-                          v-model="secretText" id="secret" autofocus="autofocus"></textarea>
+                          v-model="secretText" id="secret" autofocus="autofocus" :disabled="!canUserHandle"></textarea>
             </div>
             <div class="info-inputs animated" :class="{ fadeOut: isFormSubmit }">
                 <div class="info-input animated fadeIn delay-5s">
                     <label for="userName">或许你想留下一个称呼吗？</label>
-                    <input type="text" name="userName" id="userName" v-model="userName" />
+                    <input type="text" name="userName" id="userName" v-model="userName" :disabled="!canUserHandle"/>
                 </div>
                 <div class="info-input animated fadeIn delay-4s">
-                    <label for="userContact">你的联系方式（邮箱或国内手机号码）</label>
-                    <input type="text" name="userContact" id="userContact" v-model="userContact" />
+                    <label for="userContact" :class="{ invalid: !isUserContactValid }">你的联系方式（邮箱或国内手机号码）</label>
+                    <input type="text" name="userContact" id="userContact" v-model="userContact"
+                           :disabled="!canUserHandle"/>
                 </div>
                 <div class="info-input with-btn animated fadeIn delay-3s">
                     <label class="animated fast fadeIn"
-                           v-if="canSubmit">
+                           v-if="isTextLengthValid">
                         {{secretLengthStr}}</label>
-                    <div class="submit-button" :class="{ active: canSubmit }">
-                        <p v-if="canSubmit" @click="submit">提交</p>
-                        <p v-if="!canSubmit">
-                            {{secretLengthStr}} / {{minSecretTextLength}}</p>
+                    <div class="submit-button"
+                         :class="{ active: isTextLengthValid, busy: isTextLengthValid && (!canUserHandle || !isUserContactValid) }">
+                        <p v-if="isTextLengthValid" @click="submit">提交</p>
+                        <p v-if="!isTextLengthValid">{{secretLengthStr}} / {{minSecretTextLength}}</p>
                     </div>
                 </div>
             </div>
@@ -67,6 +68,7 @@
 
 <script>
     import lottie from 'lottie-web';
+    import qs from 'qs';
     import * as animationData from './assets/data'
 
     export default {
@@ -101,45 +103,46 @@
                 maxPage: -1,
                 pages: [
                     {
-                        title: "邮箱设立的目的",
-                        content: "这个秘密邮箱是为音乐人 Kevinz 计划发行的“听后即焚”型数字音乐专辑搜集创作素材而设立的。<br />" +
-                            "您投递进邮箱里的秘密可能被选为制作的题材，<br />" +
-                            "并通过影像加音乐的方式演绎为一段不可复现的欣赏体验。"
+                        title: "欢迎你，前来寄信的客人。",
+                        content: "我们的秘密邮箱——也就是你眼前的这座红色邮筒，<br />" +
+                            "是为音乐人 Kevinz 计划发行的<strong>“听后即焚”型数字音乐专辑</strong>搜集创作素材而设立的。<br />" +
+                            "<span class='animated delay-5s fadeIn'>如果您愿意将您的秘密投递到这里，它将有可能被选为制作的题材，<br />" +
+                            "并通过影像加音乐的方式演绎为一段<strong>不可复现</strong>的欣赏体验。</span>"
                     }, {
-                        title: "“听后即焚”型数字音乐专辑是什么?",
-                        content: "根据目前可以透露的信息，它将是一份呈现方式相对特殊，糅合了多种视听媒介的付费数字音乐专辑。<br />" +
-                            "我们十分用心地设计了这个秘密邮箱网页作为先导环节，希望您可以积极地参与到我们的整个创作过程中，<br />" +
-                            "让这个特殊的作品在各种意义上成为您与我们之间交流互动痕迹的留存。"
+                        title: "这是一张怎样的专辑？",
+                        content: "根据目前可以透露的信息，这将是一份呈现方式相对特殊，并糅合多种视听媒介的付费数字专辑；<br />" +
+                            "而它的全部内容和灵感，都将以这座信箱中收集到的稿件作为来源。<br />" +
+                            "<span class='animated delay-5s fadeIn'>通过这个秘密邮箱，您和其他秘密的持有者都可以参与到我们的整个创作过程中，<br />" +
+                            "让这个特殊的作品在各种意义上成为您与我们之间联结痕迹的留存。</span>"
                     }, {
                         title: "在开始您的讲述之前，请先阅知这些基本的要求:",
                         content: "<ol>" +
-                            "<li>本树洞实行不记名制度。您无需在投稿中注明自己的身份，同时也不必在您的讲述过程中提及任何现实生活中存在的真实人名、地点、社会团体名称等信息。<br />若必须提及，请尽量使用如 ABCD 或甲乙丙丁之类的代号。</li>" +
-                            "<li>您可以写您认为适合写出来，并希望我们将其演绎成音乐作品的任何真事，不需考虑故事是否符合我们的期待。<br />无论是精彩的故事，还是一段平淡而细致动人的回忆；无论是您日久天长仍不能忘怀的往事，还是正发生在当下未完的事，或甚至是发生在您的亲友身上的故事，只要您愿意将您的故事讲给我们听，我们就会扮演您忠实的沉默听众。</li>" +
-                            "<li>请务必把真实，也就是客观上发生过或正在发生的故事写给我们。被我们认定有以下问题的投稿，被优先采纳的可能性会极大地降低：<ul>" +
-                            "<li>有过于明显的虚构痕迹，或从头至尾都是明显的幻想故事的；</li>" +
-                            "<li>用语晦涩难懂，或行文同现代汉语差距过大，导致阅读困难的；</li>" +
-                            "<li>叙述逻辑混乱，导致理解困难的；</li>" +
-                            "<li>用制作组掌握范围之外的语种叙述的。</li></ul></li>" +
-                            "<li>如果您的故事涉及任何在现实生活中发生过的违法犯罪活动，希望您三思后再投稿。设立这条规定的理由可以参考经典辩论题目“神父听了杀人犯的告解后该不该报警”——当然我们不是自比神父，只是意在说明我们不希望陷入这种两难境地。请您务必给予理解。</li>" +
-                            `<li>为了尽量收集到有意义的投稿，并且保证投稿中有一定细节可供创作参考，我们设置了最低字数限制（${this.minSecretTextLength}字），请您尽量不要讲得太简略。同时，恶意灌水（譬如无意义的文字组合、乱码、表白信、催稿信等与征集主题不相关的内容）是不允许的。</li>` +
-                            "<li>为了方便后续联系，建议您尽量留下一个不致暴露自己身份的联系方式（仅支持邮箱及中国大陆手机号码）。您也可以选择不留任何联系方式。</li>" +
+                            "<li>秘密邮箱实行<strong>不记名制度</strong>。<br />您无需在投稿中注明自己的身份，同时也请尽量避免在讲述过程中提及任何现实生活中存在的真实人名、地点、社会团体名称等信息。<br />若必须提及，请尽量使用如 ABCD 或甲乙丙丁之类的代号。</li>" +
+                            "<li>只要您有认为适合写出来、并希望我们将其演绎成音乐作品的秘密和故事，您就可以在这里投递稿件。我们不会对内容的题材、体裁、叙述方式等作任何限制，您也完全不需考虑它是否符合我们的期待。<br />无论是精彩跌宕的情节，还是一段平淡而细致动人的回忆；无论是您日久天长仍不能忘怀的心绪，还是正发生在当下未完的牵绊——只要您愿意将您的秘密故事讲给我们，我们就会做您忠实的沉默听众。</li>" +
+                            "<li>请务必保证故事的真实性。被我们认定有以下状况的投稿，被优先采纳的可能性会较大程度地降低：<ul>" +
+                            "<li>有过于明显的虚构痕迹，或从头至尾都是明显的幻想故事；</li>" +
+                            "<li>用语晦涩难懂，或行文同现代汉语差距过大；</li>" +
+                            "<li>叙述逻辑混乱，导致理解困难；</li>" +
+                            "<li>用制作组掌握范围之外的语种叙述。</li></ul></li>" +
+                            "<li>如果您的故事涉及任何在现实生活中发生过的违法犯罪活动，希望您仔细斟酌是否应该投稿。设立这条规定的理由可以参考经典辩论题目“神父听了杀人犯的告解后该不该报警”——当然我们并非自比神父，仅仅意在说明我们不希望陷入这种两难境地。请您务必给予理解。</li>" +
+                            `<li>为了尽量收集到高质量的投稿、并且保证投稿中有一定细节可供创作参考，我们设置了<strong>最低字数限制</strong>（100字），希望您可以更加全面完善、更加细腻地讲述它。同时，恶意灌水的情况（譬如无意义的文字组合、乱码、表白信、催稿信等与征集主题不相关的内容）会被取消参与资格，情况严重者会列入黑名单。</li>` +
+                            "<li>为了方便后续联系，建议您尽量留下一个不致暴露自己身份的联系方式（目前仅支持填写邮箱或中国大陆手机号码）。您也可以选择不留任何联系方式。</li>" +
                             "</ol>"
                     }, {
                         title: "收到您的投稿后，我们承诺:",
                         content: "<ol>" +
-                            "<li>我们将逐条仔细阅读所有投稿，您不必担心自己的故事会湮没在其他投稿中。</li>" +
-                            "<li>您的投稿原文及您留下的联系方式等信息将被永久封存，不会以任何方式公开。如有必要，我们也会采取其他手段来保障整个投信过程的绝对私密性。</li>" +
+                            "<li>我们将<strong>逐条仔细阅读所有投稿</strong>，您不必担心自己的故事会湮没在其他投稿中。</li>" +
+                            "<li>您的投稿原文及您留下的联系方式等信息将被永久封存，<strong>不会以任何方式公开</strong>。如有必要，我们也会采取其他手段来保障整个投信过程的绝对私密性。</li>" +
                             "<li>如果您的投稿被选为创作及后期宣发材料的题材，我们将会对您的投稿作一定程度的艺术加工，在不妨害创作自由的基础上，保证您的身份不被相关者轻易猜到。" +
-                            "<li>如果您的投稿被选为创作及后期宣发材料的题材，同时您选择了留下有效联系方式，开售后我们将通过您的联系方式，为您发送一份免费的激活码以表示谢意。</li>" +
-                            "<li>为了尽量收集到有意义的投稿，并且保证投稿中有一定细节可供创作参考，我们设置了最低字数限制（100字），请您尽量不要讲得太简略。同时，恶意灌水（譬如无意义的文字组合、乱码、表白信、催稿信等与征集主题不相关的内容）是不允许的。</li>" +
-                            "<li>您的讲述对我们而言绝不是可有可无的参考，相反，每一个秘密都将会被我们最大化地利用，最终呈现出的绝大多数故事情节都将来自您和其他人的投稿。</li>" +
+                            "<li>如果您的投稿被选为创作及后期宣发材料的题材，同时您选择了留下有效联系方式，开售后我们将通过您的联系方式为您<strong>免费提供专辑和制作组的礼物</strong>，以表示谢意。</li>" +
+                            "<li>您的讲述对我们而言绝不是可有可无的参考；相反，每一个秘密都将会被我们最大化利用，最终呈现出的绝大多数故事情节都将来自您和其他人的投稿。</li>" +
                             "</ol>"
                     }, {
                         title: "",
                         content: "本使用说明之版权以及其修改权、更新权及最终解释权均属 Kevinz 个人所有。<br /> Kevinz 及制作组其他成员保留在未经事先声明的情况下修改本声明的权利。<br />如您仍有本使用说明未能解答的问题，可以通过网站给出的联系方式询问 Kevinz 本人。"
                     }, {
                         title: "",
-                        content: "十分感谢您的耐心阅读。<br />请开始讲您的故事吧，我们在听。"
+                        content: "十分感谢您的耐心阅读。<br />请开始讲述您的故事吧，我们在听。"
                     }
                 ],
                 userName: "",
@@ -160,21 +163,32 @@
                     }
                     this.canUserHandle = true;
                 }, 1000);
+            },
+
+            userName(val) {
+                const r = /[^.,\-_，。？！：；a-zA-Z0-9\u4E00-\u9FA5]/g;
+                if (!r.test(val)) this.userName = val.replace(r, '')
             }
         },
         computed: {
             secretTextLength() {
-                return this.secretText.replace(/[\r\n|\s]*/g, "").length
+                return this.secretText.replace(/[^\u4e00-\u9fa5]/g, "").length
             },
 
-            canSubmit() {
+            isTextLengthValid() {
                 return this.secretTextLength >= this.minSecretTextLength
             },
 
             secretLengthStr() {
-                return this.canSubmit
+                return this.isTextLengthValid
                     ? this.secretTextLength
                     : (Array(3).join('0') + this.secretTextLength).slice(-3);
+            },
+
+            isUserContactValid() {
+                return this.userContact === ""
+                    || /^([A-Za-z0-9_\-.\u4e00-\u9fa5])+@([A-Za-z0-9_\-.])+\.([A-Za-z]{2,7})$/.test(this.userContact)
+                    || /^1[3|4|5|7|8|9]\d{9}$/.test((this.userContact));
             }
         },
         methods: {
@@ -243,13 +257,27 @@
             },
 
             submit() {
+                if (!this.canUserHandle) return;
                 this.canUserHandle = false;
-                this.anim.goToAndPlay(this.formExitTime);
-                this.isFormSubmit = true;
-                setTimeout(() => {
-                    this.isSecretActive = false;
+                this.$axios.post(`/mailbox`, qs.stringify({
+                    userName: this.userName,
+                    userContact: this.userContact,
+                    secretText: this.secretText
+                })).then(res => {
+                    const data = res.data;
+                    if (data.status === "ok") {
+                        this.anim.goToAndPlay(this.formExitTime);
+                        this.isFormSubmit = true;
+                        setTimeout(() => {
+                            this.isSecretActive = false;
+                            this.canUserHandle = true;
+                        }, 1000);
+                    } else throw `Error ${data.errCode}: ${data.errMsg}`
+                }).catch(error => {
+                    // eslint-disable-next-line no-console
+                    console.error(error);
                     this.canUserHandle = true;
-                }, 1000);
+                });
             },
 
             createNewLetter() {
@@ -257,7 +285,7 @@
                 this.anim.play();
                 this.secretText = "";
                 this.$refs.finishText.classList.remove("delay-5s");
-                this.$refs.finishText.classList.add("fadeOut");
+                this.$refs.finishText.classList.add("fadeOutDown");
                 setTimeout(() => {
                     this.anim.pause();
                     this.anim.setDirection(1);
@@ -340,6 +368,10 @@
             line-height 40px
             overflow auto
             margin 60px 0
+
+            strong
+                color cadetblue
+                margin 0 3px
 
             ol
                 text-align left
@@ -437,6 +469,11 @@
                 color darkcyan
                 font-size 12px
                 margin 5px 0
+                transition .5s
+
+                &.invalid
+                    color darkred
+                    transition .5s
 
             & > .info-input
                 flex 1 0 auto
@@ -488,6 +525,11 @@
                             margin-top 9px
                             color gainsboro
                             transition .5s color
+
+                    &.busy, &.busy:hover
+                        cursor inherit
+                        background grey
+                        transition .5s background
 
     .finish-text
         position absolute
