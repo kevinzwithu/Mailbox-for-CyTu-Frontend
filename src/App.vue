@@ -62,8 +62,7 @@
                 </div>
             </div>
         </div>
-        <div class="finish-text animated fadeIn delay-5s" v-if="isFormSubmit" ref="finishText"
-             :style="{ height: screenWidth * 9 / 16 * 0.9 + 'px' }">
+        <div class="finish-text animated fadeIn delay-5s" v-if="isFormSubmit" ref="finishText">
             <p>我们已经收到您的故事。</p>
             <div class="new-letter" @click="createNewLetter">再投一封</div>
         </div>
@@ -593,7 +592,7 @@
         left 0
         right 0
         width 100%
-        bottom 10%
+        top 80%
         color darkcyan
         font-size 14px
         display flex

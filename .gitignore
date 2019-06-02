@@ -20,4 +20,5 @@ yarn-error.log*
 *.sln
 *.sw?
 
-public/fonts/*font*/*.ttf
+dist/fonts/*font*/*.ttf
+public/fonts/*
