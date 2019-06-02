@@ -23,7 +23,7 @@
                 </div>
             </div>
             <div class="dots animated" :class="{ fadeOut: isDialogFinished }">
-                <div class="dots-box animated delay-3s fadeIn">
+                <div class="dots-box animated delay-3s lampIn">
                     <div v-for="(_, i) in pages" :key="i"
                          class="dot" :ref="'dot'+i"
                          :class="{'dot-active': currentPage === i, 'dot-hidden': maxPage < (i-1)}"
@@ -67,14 +67,15 @@
             <div class="new-letter" @click="createNewLetter">再投一封</div>
         </div>
         <div class="test-box" v-if="!isBrowserSupported">抱歉，本站目前不支持IE及Edge浏览器。<br/>对此带来的不便深表歉意。请使用其他浏览器访问。</div>
-        <div class="test-box wall" v-if="isWaiting" @click="getUserClick"></div>
+        <div class="wall" v-if="isWaiting" @click="getUserClick"
+             :style="{ height: screenWidth * 9 / 16 * 0.05 + 'px', top: screenWidth * 9 / 16 * 0.397 + 'px' }"></div>
     </div>
 </template>
 
 <script>
     import lottie from 'lottie-web';
     import qs from 'qs';
-    import * as animationData from './assets/data'
+    import * as animationData from '../public/data'
 
     export default {
         name: 'app',
@@ -87,7 +88,7 @@
                 animationData: animationData.default
             });
             let userAgent = navigator.userAgent;
-            if ((userAgent.indexOf("compatible") > -1 && userAgent.indexOf("MSIE") > -1) && (userAgent.indexOf("Opera") <= -1)) return;
+            if ((userAgent.indexOf("compatible") > -1 && userAgent.indexOf("MSIE") > -1) && (userAgent.indexOf("Opera") <= -1) || window.ActiveXObject || "ActiveXObject" in window) return;
             if (userAgent.indexOf("Edge") > -1) return;
             this.isBrowserSupported = true;
             window.onresize = () => {
@@ -103,7 +104,7 @@
                 minSecretTextLength: 100,
                 changePageWaitPeriod: 5000,
                 openingBlackOutPeriod: 1500,
-                zoomToMailboxTime: 3200,
+                zoomToMailboxTime: 3250,
                 dialogEnterTime: 6500,
                 dialogExitTime: 10600,
                 formEnterTime: 17000,
@@ -289,7 +290,7 @@
             },
 
             submit() {
-                if (!this.canUserHandle || !this.isUserContactValid) return;
+                if (!this.canUserHandle || !this.isUserContactValid || !this.isTextLengthValid) return;
                 this.canUserHandle = false;
                 this.$axios.post(`/mailbox`, qs.stringify({
                     userName: this.userName,
@@ -334,6 +335,7 @@
 
     red-gradient = linear-gradient(to right bottom, rgba(255, 0, 0, .6), rgba(255, 0, 0, .9))
     cyan-gradient = linear-gradient(to right bottom, rgba(0, 255, 255, .6), rgba(0, 255, 255, .9))
+    black-gradient = linear-gradient(rgba(0, 0, 0, .3), rgba(0, 0, 0, .9))
 
     title-font = 'serif-m', '\5b8b\4f53', Serif
     content-font = Helvetica, Tahoma, Arial, "PingFang SC", "Hiragino Sans GB", "Noto Sans S Chinese", "sans-r", "Heiti SC", "Microsoft YaHei", "WenQuanYi Micro Hei", sans-serif
@@ -366,15 +368,24 @@
         background red
         background-size cover
 
+    .test-box
+        color white
+        padding-top 50px
+
     .wall
-        position fixed
+        position absolute
         top 0
-        bottom 0
-        left 0
-        right 0
+        left 38.92%
+        right 41.5%
+        height 10%
         z-index 11
         cursor pointer
-        background none
+        opacity 0
+        transition .3s
+        &:hover, &:active
+            opacity .2
+            background black-gradient
+            transition .1s
 
     .readme
         position absolute
@@ -450,24 +461,27 @@
             flex-direction row
 
             & > .dot
-                border-radius 100%
-                height 10px
-                margin 0 30px
+                /*border-radius 100%*/
+                transform rotate(30deg)
+                height 18px
+                margin 0 60px
                 width @height
                 border 1px solid white
-                opacity 1
+                opacity .8
                 transition 1s
                 cursor pointer
 
                 &.dot-active
                     background white
                     transition 1s
+                    opacity 1
                     cursor inherit
 
                 &.dot-hidden
                     opacity 0
                     transition 1s
                     cursor inherit
+                    animation none
 
     @media screen and (orientation: portrait)
         #app
@@ -607,6 +621,62 @@
             padding 10px 25px
             margin 0 25px
 
+    @-webkit-keyframes lamp
+        from
+            opacity 0
+
+        2%
+            opacity 1
+
+        4%
+            opacity 0
+
+        10%
+            opacity 0
+
+        12%
+            opacity 1
+
+        14%
+            opacity 0
+
+        50%
+            opacity 0
+
+        to
+            opacity 1
+
+
+    @keyframes lamp
+        from
+            opacity 0
+
+        2%
+            opacity 1
+
+        4%
+            opacity 0
+
+        10%
+            opacity 0
+
+        12%
+            opacity 1
+
+        14%
+            opacity 0
+
+        50%
+            opacity 0
+
+        to
+            opacity 1
+
+    .lampIn
+        -webkit-animation-name lamp
+        -webkit-animation-duration 2s !important
+        animation-name lamp
+        animation-duration 2s !important
 
     @keyframes anim
         from
