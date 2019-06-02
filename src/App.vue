@@ -1,7 +1,7 @@
 <template>
-    <div id="app">
+    <div id="app" class="animated fadeIn">
         <div class="DEBUG"></div>
-        <div ref="lavContainer"></div>
+        <div ref="lavContainer" v-show="isBrowserSupported" class="bg-anime" id="bg"></div>
         <div class="readme animated loading" v-if="isReadmeActive"
              :class="{ finished: isDialogFinished }">
             <div class="readme-title animated" :class="{ fadeOut: isDialogFinished }">
@@ -18,7 +18,7 @@
                      :ref="'text'+i">
                     <span v-html="page.content"></span>
                 </div>
-                <div class='finish-btn animated delay-4s fadeIn slow'
+                <div class='finish-btn animated delay-3s fadeIn slow'
                      @click='finishDialog' v-if="currentPage === pages.length - 1">start
                 </div>
             </div>
@@ -31,19 +31,22 @@
                 </div>
             </div>
         </div>
-        <div class="secret animated fadeIn delay-1s" v-if="isSecretActive">
+        <div class="secret animated fadeIn delay-1s"
+             v-if="isSecretActive"
+             :style="{ height: screenWidth * 9 / 16 * 0.86 + 'px' }">
             <div class="secret-input animated" :class="{ fadeOut: isFormSubmit }">
                 <label for="secret"></label>
-                <textarea placeholder="（请在这里，讲述你的故事吧。）" maxlength="10000"
-                          v-model="secretText" id="secret" autofocus="autofocus" :disabled="!canUserHandle"></textarea>
+                <textarea placeholder="（请在这里，讲述您的故事吧。）" maxlength="40000"
+                          v-model="secretText" id="secret" autofocus="autofocus"
+                          :disabled="!canUserHandle"></textarea>
             </div>
             <div class="info-inputs animated" :class="{ fadeOut: isFormSubmit }">
-                <div class="info-input animated fadeIn delay-5s">
-                    <label for="userName">或许你想留下一个称呼吗？</label>
-                    <input type="text" name="userName" id="userName" v-model="userName" :disabled="!canUserHandle"/>
-                </div>
+                <!--                <div class="info-input animated fadeIn delay-5s">-->
+                <!--                    <label for="userName">或许你想留下一个称呼吗？</label>-->
+                <!--                    <input type="text" name="userName" id="userName" v-model="userName" :disabled="!canUserHandle"/>-->
+                <!--                </div>-->
                 <div class="info-input animated fadeIn delay-4s">
-                    <label for="userContact" :class="{ invalid: !isUserContactValid }">你的联系方式（邮箱或国内手机号码）</label>
+                    <label for="userContact" :class="{ invalid: !isUserContactValid }">您的联系方式（邮箱或国内手机号码，可不填）</label>
                     <input type="text" name="userContact" id="userContact" v-model="userContact"
                            :disabled="!canUserHandle"/>
                 </div>
@@ -51,18 +54,21 @@
                     <label class="animated fast fadeIn"
                            v-if="isTextLengthValid">
                         {{secretLengthStr}}</label>
-                    <div class="submit-button"
+                    <div class="submit-button" @click="submit"
                          :class="{ active: isTextLengthValid, busy: isTextLengthValid && (!canUserHandle || !isUserContactValid) }">
-                        <p v-if="isTextLengthValid" @click="submit">提交</p>
+                        <p v-if="isTextLengthValid">提交</p>
                         <p v-if="!isTextLengthValid">{{secretLengthStr}} / {{minSecretTextLength}}</p>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="finish-text animated fadeIn delay-5s" v-if="isFormSubmit" ref="finishText">
-            <p>我们已经收到您的秘密。</p>
+        <div class="finish-text animated fadeIn delay-5s" v-if="isFormSubmit" ref="finishText"
+             :style="{ height: screenWidth * 9 / 16 * 0.9 + 'px' }">
+            <p>我们已经收到您的故事。</p>
             <div class="new-letter" @click="createNewLetter">再投一封</div>
         </div>
+        <div class="test-box" v-if="!isBrowserSupported">抱歉，本站目前不支持IE及Edge浏览器。<br/>对此带来的不便深表歉意。请使用其他浏览器访问。</div>
+        <div class="test-box wall" v-if="isWaiting" @click="getUserClick"></div>
     </div>
 </template>
 
@@ -81,18 +87,30 @@
                 autoplay: false,
                 animationData: animationData.default
             });
-            // eslint-disable-next-line no-console
-            console.log(this.anim);
-            this.startToPlay(1500);
+            let userAgent = navigator.userAgent;
+            if ((userAgent.indexOf("compatible") > -1 && userAgent.indexOf("MSIE") > -1) && (userAgent.indexOf("Opera") <= -1)) return;
+            if (userAgent.indexOf("Edge") > -1) return;
+            this.isBrowserSupported = true;
+            window.onresize = () => {
+                return (() => {
+                    window.screenWidth = document.body.clientWidth;
+                    this.screenWidth = window.screenWidth;
+                })()
+            }
+            this.startToPlay(this.openingBlackOutPeriod);
         },
         data() {
             return {
                 minSecretTextLength: 100,
                 changePageWaitPeriod: 5000,
+                openingBlackOutPeriod: 1500,
+                zoomToMailboxTime: 3200,
                 dialogEnterTime: 6500,
                 dialogExitTime: 10600,
                 formEnterTime: 17000,
                 formExitTime: 18500,
+                isWaiting: false,
+                isBrowserSupported: false,
                 isReadmeActive: false,
                 isSecretActive: false,
                 isDialogFinished: false,
@@ -101,12 +119,13 @@
                 canUserHandle: false,
                 currentPage: -1,
                 maxPage: -1,
+                screenWidth: document.body.clientWidth,
                 pages: [
                     {
-                        title: "欢迎你，前来寄信的客人。",
-                        content: "我们的秘密邮箱——也就是你眼前的这座红色邮筒，<br />" +
-                            "是为音乐人 Kevinz 计划发行的<strong>“听后即焚”型数字音乐专辑</strong>搜集创作素材而设立的。<br />" +
-                            "<span class='animated delay-5s fadeIn'>如果您愿意将您的秘密投递到这里，它将有可能被选为制作的题材，<br />" +
+                        title: "欢迎您，前来寄信的客人。",
+                        content: "我们的秘密邮箱——也就是您眼前的这座红色邮筒，<br />" +
+                            "是为 Kevinz 计划发行的<strong>“听后即焚”型数字音乐专辑</strong>搜集创作素材而设立的。<br />" +
+                            "<span class='animated delay-4s fadeIn'>如果您愿意将您的秘密投递到这里，它将有可能被选为制作的题材，<br />" +
                             "并通过影像加音乐的方式演绎为一段<strong>不可复现</strong>的欣赏体验。</span>"
                     }, {
                         title: "这是一张怎样的专辑？",
@@ -115,7 +134,7 @@
                             "<span class='animated delay-5s fadeIn'>通过这个秘密邮箱，您和其他秘密的持有者都可以参与到我们的整个创作过程中，<br />" +
                             "让这个特殊的作品在各种意义上成为您与我们之间联结痕迹的留存。</span>"
                     }, {
-                        title: "在开始您的讲述之前，请先阅知这些基本的要求:",
+                        title: "在开始您的讲述之前，请先阅知这些基本的要求：",
                         content: "<ol>" +
                             "<li>秘密邮箱实行<strong>不记名制度</strong>。<br />您无需在投稿中注明自己的身份，同时也请尽量避免在讲述过程中提及任何现实生活中存在的真实人名、地点、社会团体名称等信息。<br />若必须提及，请尽量使用如 ABCD 或甲乙丙丁之类的代号。</li>" +
                             "<li>只要您有认为适合写出来、并希望我们将其演绎成音乐作品的秘密和故事，您就可以在这里投递稿件。我们不会对内容的题材、体裁、叙述方式等作任何限制，您也完全不需考虑它是否符合我们的期待。<br />无论是精彩跌宕的情节，还是一段平淡而细致动人的回忆；无论是您日久天长仍不能忘怀的心绪，还是正发生在当下未完的牵绊——只要您愿意将您的秘密故事讲给我们，我们就会做您忠实的沉默听众。</li>" +
@@ -172,7 +191,7 @@
         },
         computed: {
             secretTextLength() {
-                return this.secretText.replace(/[^\u4e00-\u9fa5]/g, "").length
+                return this.secretText.replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, "").length
             },
 
             isTextLengthValid() {
@@ -195,15 +214,28 @@
             startToPlay(waitTime) {
                 setTimeout(() => {
                     this.anim.play();
-                    this.displayDialog(this.dialogEnterTime);
+                    this.waitForUserClick(this.zoomToMailboxTime);
                 }, waitTime);
+            },
+
+            waitForUserClick(waitTime) {
+                setTimeout(() => {
+                    this.anim.pause();
+                    this.isWaiting = true;
+                }, waitTime)
+            },
+
+            getUserClick() {
+                this.isWaiting = false;
+                this.anim.play();
+                this.displayDialog(this.dialogEnterTime - this.zoomToMailboxTime);
             },
 
             displayDialog(waitTime) {
                 setTimeout(() => {
                     this.anim.pause();
                     this.isReadmeActive = true;
-                    this.currentPage++;
+                    this.currentPage = 0;
                 }, waitTime)
             },
 
@@ -215,6 +247,7 @@
             },
 
             changeCurrentPageTo(i) {
+                if (i - 1 > this.maxPage) return;
                 const cp = this.currentPage;
                 if ((i !== cp) && this.canUserHandle) {
                     this.canUserHandle = false;
@@ -257,7 +290,7 @@
             },
 
             submit() {
-                if (!this.canUserHandle) return;
+                if (!this.canUserHandle || !this.isUserContactValid) return;
                 this.canUserHandle = false;
                 this.$axios.post(`/mailbox`, qs.stringify({
                     userName: this.userName,
@@ -285,7 +318,7 @@
                 this.anim.play();
                 this.secretText = "";
                 this.$refs.finishText.classList.remove("delay-5s");
-                this.$refs.finishText.classList.add("fadeOutDown");
+                this.$refs.finishText.classList.add("fadeOutDownBig");
                 setTimeout(() => {
                     this.anim.pause();
                     this.anim.setDirection(1);
@@ -298,17 +331,24 @@
 </script>
 
 <style lang="stylus">
+    @import "../public/fonts/fonts.css"
+
     red-gradient = linear-gradient(to right bottom, rgba(255, 0, 0, .6), rgba(255, 0, 0, .9))
     cyan-gradient = linear-gradient(to right bottom, rgba(0, 255, 255, .6), rgba(0, 255, 255, .9))
 
+    title-font = 'serif-m', '\5b8b\4f53', Serif
+    content-font = Helvetica, Tahoma, Arial, "PingFang SC", "Hiragino Sans GB", "Noto Sans S Chinese", "sans-r", "Heiti SC", "Microsoft YaHei", "WenQuanYi Micro Hei", sans-serif
+    strong-font = Helvetica, Tahoma, Arial, "PingFang SC", "Hiragino Sans GB", "sans-b", "Heiti SC", "Microsoft YaHei", "WenQuanYi Micro Hei", sans-serif
+
     #app
-        font-family 'Avenir', Helvetica, Arial, sans-serif
+        font-family content-font
         -webkit-font-smoothing antialiased
         -moz-osx-font-smoothing grayscale
         text-align center
         background black
         overflow hidden
-        height 100%
+        min-height 100%
+        min-width 100%
         top 0
         left 0
         right 0
@@ -317,7 +357,7 @@
     .DEBUG
         display none
         position absolute
-        z-index 999
+        z-index 9
         top -140px
         bottom 0
         left 0
@@ -326,6 +366,16 @@
         height 100%
         background red
         background-size cover
+
+    .wall
+        position fixed
+        top 0
+        bottom 0
+        left 0
+        right 0
+        z-index 11
+        cursor pointer
+        background none
 
     .readme
         position absolute
@@ -336,9 +386,9 @@
         background rgba(12, 15, 16, .9)
         border-radius 150px
         animation anim 1s cubic-bezier(.46, 0, .54, 1) forwards
-        -webkit-anismation anim 1s cubic-bezier(.46, 0, .54, 1) forwards
+        -webkit-animation anim 1s cubic-bezier(.46, 0, .54, 1) forwards
         -moz-animation anim 1s cubic-bezier(.46, 0, .54, 1) forwards
-        -o-anismation anim 1s cubic-bezier(.46, 0, .54, 1) forwards
+        -o-animation anim 1s cubic-bezier(.46, 0, .54, 1) forwards
         display flex
         justify-content space-between
         align-items center
@@ -361,6 +411,7 @@
             color white
             font-size 28px
             font-weight bold
+            font-family title-font
 
         & > .readme-text
             color rgba(255, 255, 255, .8)
@@ -370,6 +421,7 @@
             margin 60px 0
 
             strong
+                font-family strong-font
                 color cadetblue
                 margin 0 3px
 
@@ -406,7 +458,7 @@
                 border 1px solid white
                 opacity 1
                 transition 1s
-                cursor: pointer
+                cursor pointer
 
                 &.dot-active
                     background white
@@ -418,6 +470,11 @@
                     transition 1s
                     cursor inherit
 
+    @media screen and (orientation: portrait)
+        #app
+            visibility hidden !important
+            animation-delay 0 !important
+
     @media screen and (max-width: 1440px)
         .readme > .readme-text
             line-height 30px
@@ -427,20 +484,20 @@
     .secret
         position absolute
         width 66%
-        height 74%
+        /*height 86%*/
         top 0
         bottom 0
         left 7px
         right 0
-        margin-left 17%
-        margin-top 8%
-        z-index 1000
+        margin 0 17%
+        z-index 10
         display flex
         flex-direction column
         align-items stretch
 
         & > .secret-input
-            flex 9 0 auto
+            flex 9 1 auto
+            padding-top 13%
 
             textarea
                 width 100%

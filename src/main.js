@@ -4,8 +4,8 @@ import axios from 'axios'
 import 'animate.css'
 
 axios.defaults.timeout = 5000
-axios.defaults.baseURL = 'http://api.kevinz.cn:6699';
-// axios.defaults.baseURL = 'http://localhost:3000'
+axios.defaults.baseURL = 'http://api.kevinz.cn:3001';
+// axios.defaults.baseURL = 'http://localhost:3001'
 
 axios.interceptors.request.use(config => {
   config.headers = {

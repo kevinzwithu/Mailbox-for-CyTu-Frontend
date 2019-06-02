@@ -1,0 +1,44 @@
+@charset "utf-8";
+@font-face {
+    font-family: 'sans-r';
+    src: url('./SHSansRegular.eot');
+    src: url('SHSansRegular.eot?#font-spider') format('embedded-opentype'),
+    url('SHSansRegular.woff') format('woff'),
+    url('SHSansRegular.ttf') format('truetype'),
+    url('SHSansRegular.svg') format('svg');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'serif-m';
+    src: url('./SHSerifMedium.eot');
+    src: url('SHSerifMedium.eot?#font-spider') format('embedded-opentype'),
+    url('SHSerifMedium.woff') format('woff'),
+    url('SHSerifMedium.ttf') format('truetype'),
+    url('SHSerifMedium.svg') format('svg');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'sans-b';
+    src: url('./SHSansBold.eot');
+    src: url('SHSansBold.eot?#font-spider') format('embedded-opentype'),
+    url('SHSansBold.woff') format('woff'),
+    url('SHSansBold.ttf') format('truetype'),
+    url('SHSansBold.svg') format('svg');
+    font-style: normal;
+}
+
+#contents {
+    font-family: 'sans-r';
+}
+
+#titles {
+    font-family: 'serif-r';
+}
+
+#strongs {
+    font-family: 'sans-b';
+}
