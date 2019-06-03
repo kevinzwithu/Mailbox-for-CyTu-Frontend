@@ -22,3 +22,4 @@ yarn-error.log*
 
 dist/fonts/*font*/*.ttf
 public/fonts/*
+public/*.json

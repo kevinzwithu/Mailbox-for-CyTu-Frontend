@@ -3,7 +3,7 @@
         <div class="DEBUG"></div>
         <div ref="lavContainer" v-show="isBrowserSupported" class="bg-anime" id="bg"></div>
         <div class="readme animated loading" v-if="isReadmeActive"
-             :class="{ finished: isDialogFinished }">
+             :class="{ mobile: isUsingMobile, finished: isDialogFinished }">
             <div class="readme-title animated" :class="{ fadeOut: isDialogFinished }">
                 <div v-for="(page, i) in pages" :key="i" class="animated fadeIn delay-1s"
                      :class="{ hidden: currentPage !== i }"
@@ -26,14 +26,14 @@
                 <div class="dots-box animated delay-3s lampIn">
                     <div v-for="(_, i) in pages" :key="i"
                          class="dot" :ref="'dot'+i"
-                         :class="{'dot-active': currentPage === i, 'dot-hidden': maxPage < (i-1)}"
+                         :class="{mobile: isUsingMobile, 'dot-active': currentPage === i, 'dot-hidden': maxPage < (i-1)}"
                          @click="changeCurrentPageTo(i)"></div>
                 </div>
             </div>
         </div>
-        <div class="secret animated fadeIn delay-1s"
+        <div class="secret animated fadeIn delay-1s" :class="{ mobile: isUsingMobile }"
              v-if="isSecretActive"
-             :style="{ height: screenWidth * 9 / 16 * 0.86 + 'px' }">
+             :style="{ height: isUsingMobile ? (screenWidth * 16 / 9 * 0.75 + 'px') : (screenWidth * 9 / 16 * 0.86 + 'px') }">
             <div class="secret-input animated" :class="{ fadeOut: isFormSubmit }">
                 <label for="secret"></label>
                 <textarea placeholder="（请在这里，讲述您的故事吧。）" maxlength="40000"
@@ -46,7 +46,7 @@
                 <!--                    <input type="text" name="userName" id="userName" v-model="userName" :disabled="!canUserHandle"/>-->
                 <!--                </div>-->
                 <div class="info-input animated fadeIn delay-4s">
-                    <label for="userContact" :class="{ invalid: !isUserContactValid }">您的联系方式（邮箱或国内手机号码，可不填）</label>
+                    <label for="userContact" :class="{ invalid: !isUserContactValid }">您的联系方式（可不填）</label>
                     <input type="text" name="userContact" id="userContact" v-model="userContact"
                            :disabled="!canUserHandle"/>
                 </div>
@@ -56,7 +56,7 @@
                         {{secretLengthStr}}</label>
                     <div class="submit-button" @click="submit"
                          :class="{ active: isTextLengthValid, busy: isTextLengthValid && (!canUserHandle || !isUserContactValid) }">
-                        <p v-if="isTextLengthValid">提交</p>
+                        <p v-if="isTextLengthValid">OK</p>
                         <p v-if="!isTextLengthValid">{{secretLengthStr}} / {{minSecretTextLength}}</p>
                     </div>
                 </div>
@@ -68,7 +68,13 @@
         </div>
         <div class="test-box" v-if="!isBrowserSupported">抱歉，本站目前不支持IE及Edge浏览器。<br/>对此带来的不便深表歉意。请使用其他浏览器访问。</div>
         <div class="wall" v-if="isWaiting" @click="getUserClick"
-             :style="{ height: screenWidth * 9 / 16 * 0.05 + 'px', top: screenWidth * 9 / 16 * 0.397 + 'px' }"></div>
+             :style="{
+                height: isUsingMobile ? (screenWidth * 0.04275 + 'px') : (screenWidth * 0.02813 + 'px'),
+                top: isUsingMobile ? (screenWidth * 0.71111 + 'px') : (screenWidth * 0.22331 + 'px'),
+                left: isUsingMobile ? '30.5%' : '38.92%',
+                right: isUsingMobile ? '29.6%' : '41.5%',
+                background: isUsingMobile ? 'linear-gradient(rgba(255,255,255,.3), rgba(255,255,255,.9))' : 'linear-gradient(rgba(0,0,0,.3), rgba(0,0,0,.9))'
+             }"></div>
     </div>
 </template>
 
@@ -76,27 +82,35 @@
     import lottie from 'lottie-web';
     import qs from 'qs';
     import * as animationData from '../public/data'
+    import * as animationDataMB from '../public/datamb'
 
     export default {
         name: 'app',
         mounted() {
+            // this.isUsingMobile = document.documentElement.clientWidth < document.documentElement.clientHeight;
+            this.isUsingMobile = this.judgeUsingMobile();
             this.anim = lottie.loadAnimation({
                 container: this.$refs.lavContainer,
                 renderer: 'svg',
                 loop: false,
                 autoplay: false,
-                animationData: animationData.default
+                animationData: (this.isUsingMobile ? animationDataMB : animationData).default
             });
             let userAgent = navigator.userAgent;
-            if ((userAgent.indexOf("compatible") > -1 && userAgent.indexOf("MSIE") > -1) && (userAgent.indexOf("Opera") <= -1) || window.ActiveXObject || "ActiveXObject" in window) return;
-            if (userAgent.indexOf("Edge") > -1) return;
+            if ((userAgent.indexOf("compatible") > -1 && userAgent.indexOf("MSIE") > -1) && (userAgent.indexOf("Opera") <= -1)
+                || window.ActiveXObject || "ActiveXObject" in window
+                || userAgent.indexOf("Edge") > -1) return;
             this.isBrowserSupported = true;
+            if (this.isUsingMobile) {
+                this.openingBlackOutPeriod = 0;
+                this.zoomToMailboxTime = 4550;
+            }
             window.onresize = () => {
                 return (() => {
                     window.screenWidth = document.body.clientWidth;
                     this.screenWidth = window.screenWidth;
                 })()
-            }
+            };
             this.startToPlay(this.openingBlackOutPeriod);
         },
         data() {
@@ -109,6 +123,7 @@
                 dialogExitTime: 10600,
                 formEnterTime: 17000,
                 formExitTime: 18500,
+                isUsingMobile: false,
                 isWaiting: false,
                 isBrowserSupported: false,
                 isReadmeActive: false,
@@ -123,7 +138,7 @@
                 pages: [
                     {
                         title: "欢迎您，前来寄信的客人。",
-                        content: "我们的秘密邮箱——也就是您眼前的这座红色邮筒，<br />" +
+                        content: "我们的秘密邮箱——也就是您眼前的这座邮筒，<br />" +
                             "是为 Kevinz 计划发行的<strong>“听后即焚”型数字音乐专辑</strong>搜集创作素材而设立的。<br />" +
                             "<span class='animated delay-4s fadeIn'>如果您愿意将您的秘密投递到这里，它将有可能被选为制作的题材，<br />" +
                             "并通过影像加音乐的方式演绎为一段<strong>不可复现</strong>的欣赏体验。</span>"
@@ -211,6 +226,14 @@
             }
         },
         methods: {
+            judgeUsingMobile() {
+                let ua = navigator.userAgent;
+                let ipad = ua.match(/(iPad).*OS\s([\d_]+)/),
+                    isIphone =!ipad && ua.match(/(iPhone\sOS)\s([\d_]+)/),
+                    isAndroid = ua.match(/(Android)\s+([\d.]+)/);
+                return (isIphone || isAndroid)
+            },
+
             startToPlay(waitTime) {
                 setTimeout(() => {
                     this.anim.play();
@@ -335,7 +358,6 @@
 
     red-gradient = linear-gradient(to right bottom, rgba(255, 0, 0, .6), rgba(255, 0, 0, .9))
     cyan-gradient = linear-gradient(to right bottom, rgba(0, 255, 255, .6), rgba(0, 255, 255, .9))
-    black-gradient = linear-gradient(rgba(0, 0, 0, .3), rgba(0, 0, 0, .9))
 
     title-font = 'serif-m', '\5b8b\4f53', Serif
     content-font = Helvetica, Tahoma, Arial, "PingFang SC", "Hiragino Sans GB", "Noto Sans S Chinese", "sans-r", "Heiti SC", "Microsoft YaHei", "WenQuanYi Micro Hei", sans-serif
@@ -375,17 +397,17 @@
     .wall
         position absolute
         top 0
-        left 38.92%
-        right 41.5%
-        height 10%
         z-index 11
         cursor pointer
         opacity 0
         transition .3s
+
         &:hover, &:active
             opacity .2
-            background black-gradient
             transition .1s
+
+    br
+        line-height 3
 
     .readme
         position absolute
@@ -455,6 +477,21 @@
                 &:hover
                     background red-gradient
 
+        &.mobile
+            border-radius 10px
+            background rgba(12, 15, 16, .7)
+            left 3%
+            top 10%
+            width 80%
+            padding 40px 7%
+            height calc(60% - 80px)
+
+            & > .readme-title
+                font-size 20px
+
+            & > .readme-text
+                font-size 14px
+
 
         & > .dots > .dots-box
             display flex
@@ -471,6 +508,11 @@
                 transition 1s
                 cursor pointer
 
+                &.mobile
+                    margin 0 20px
+                    height 14px
+                    width @height
+
                 &.dot-active
                     background white
                     transition 1s
@@ -483,16 +525,16 @@
                     cursor inherit
                     animation none
 
-    @media screen and (orientation: portrait)
-        #app
-            visibility hidden !important
-            animation-delay 0 !important
 
     @media screen and (max-width: 1440px)
         .readme > .readme-text
             line-height 30px
             margin 40px 0
             font-size 15px
+
+    @media screen and (max-width: 350px)
+        .secret.mobile > .info-inputs
+            align-items center
 
     .secret
         position absolute
@@ -592,7 +634,7 @@
                             background darkred
 
                         p
-                            margin-top 9px
+                            margin-top 11px
                             color gainsboro
                             transition .5s color
 
@@ -600,6 +642,45 @@
                         cursor inherit
                         background grey
                         transition .5s background
+
+        &.mobile
+            top 150px
+            left 2px
+            margin 0 12%
+            width 76%
+
+            & > .secret-input
+                flex 9 1 auto
+                padding-top 13%
+
+            textarea
+                font-size 14px
+                line-height 28px
+
+            & > .info-inputs
+                flex-direction row
+
+                label
+                    color darkcyan
+                    font-size 9px
+
+                & > .info-input
+                    flex 1 1 auto
+                    text-align left
+                    display flex
+                    flex-direction column
+                    align-items flex-start
+                    margin 0 10px
+
+                    input
+                        font-size 16px
+
+                    .submit-button
+                        height 33px
+
+                    &.with-btn
+                        flex 1 0 auto
+                        align-items flex-end
 
     .finish-text
         position absolute
