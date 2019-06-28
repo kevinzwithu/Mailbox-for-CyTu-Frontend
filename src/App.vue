@@ -69,10 +69,10 @@
         <div class="test-box" v-if="!isBrowserSupported">抱歉，本站目前不支持IE及Edge浏览器。<br/>对此带来的不便深表歉意。请使用其他浏览器访问。</div>
         <div class="wall" v-if="isWaiting" @click="getUserClick"
              :style="{
-                height: isUsingMobile ? (screenWidth * 0.04275 + 'px') : (screenWidth * 0.02813 + 'px'),
-                top: isUsingMobile ? (screenWidth * 0.71111 + 'px') : (screenWidth * 0.22331 + 'px'),
-                left: isUsingMobile ? '30.5%' : '38.92%',
-                right: isUsingMobile ? '29.6%' : '41.5%',
+                height: isUsingMobile ? (screenWidth / 9 * 16 + 'px') : (screenWidth * 0.02813 + 'px'),
+                top: isUsingMobile ? '0' : (screenWidth * 0.22331 + 'px'),
+                left: isUsingMobile ? '0' : '38.92%',
+                right: isUsingMobile ? '0' : '41.5%',
                 background: isUsingMobile ? 'linear-gradient(rgba(255,255,255,.3), rgba(255,255,255,.9))' : 'linear-gradient(rgba(0,0,0,.3), rgba(0,0,0,.9))'
              }"></div>
     </div>
@@ -115,6 +115,10 @@
         },
         data() {
             return {
+                mobileMailboxLeft: '30.5%',
+                mobileMailboxRight: '29.6%',
+                mobileMailboxTop: "screenWidth * 0.71111 + 'px'",
+                mobileMailboxHeight: "screenWidth * 0.04275 + 'px'",
                 minSecretTextLength: 100,
                 changePageWaitPeriod: 5000,
                 openingBlackOutPeriod: 1500,
@@ -144,7 +148,7 @@
                             "并通过影像加音乐的方式演绎为一段<strong>不可复现</strong>的欣赏体验。</span>"
                     }, {
                         title: "这是一张怎样的专辑？",
-                        content: "根据目前可以透露的信息，这将是一份呈现方式相对特殊，并糅合多种视听媒介的付费数字专辑；<br />" +
+                        content: "目前可以透露的信息是，这将是一份呈现方式相对特殊，并糅合多种视听媒介的付费数字专辑。<br />" +
                             "而它的全部内容和灵感，都将以这座信箱中收集到的稿件作为来源。<br />" +
                             "<span class='animated delay-5s fadeIn'>通过这个秘密邮箱，您和其他秘密的持有者都可以参与到我们的整个创作过程中，<br />" +
                             "让这个特殊的作品在各种意义上成为您与我们之间联结痕迹的留存。</span>"
