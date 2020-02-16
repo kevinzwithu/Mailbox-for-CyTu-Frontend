@@ -1,13 +1,21 @@
-# cyan-turbulence-web
+# Mailbox for CyanTurbulance Project
 
-## 更新日志
+Website: [kevinz.cn/mailbox/](http://kevinz.cn/mailbox/)
 
-###v0.1.0 | 2019.6.1
+Project introduction: [Click Me](https://www.bilibili.com/read/cv3516268)
 
-- 完成业务逻辑
-- 修缮了动画
-- 完成部署
+## Update
 
-###v0.0.1 | 2019.5.29
+### 2020.2.15
 
-- 完成了动画背景
+- Close backend connection
+
+### v0.1.0 | 2019.6.1
+
+- Update logic process
+- Maintain animations
+- Deploy and Integrate
+
+### v0.0.1 | 2019.5.29
+
+- Animated background
