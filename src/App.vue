@@ -26,8 +26,8 @@
                 <div class="dots-box animated delay-3s lampIn">
                     <div v-for="(_, i) in pages" :key="i"
                          class="dot" :ref="'dot'+i"
-                         :class="{mobile: isUsingMobile, 'dot-active': currentPage === i, 'dot-hidden': maxPage < (i-1)}"
-                         @click="changeCurrentPageTo(i)"></div>
+                         :class="{ mobile: isUsingMobile, 'dot-active': !currentPage, 'dot-hidden': currentPage }"
+                         @click="changeCurrentPageTo(0)"></div>i
                 </div>
             </div>
         </div>
@@ -141,6 +141,12 @@
                 screenWidth: document.body.clientWidth,
                 pages: [
                     {
+                        title: "欢迎您，前来寄信的客人。",
+                        content: "我们深知您可能有想要传达的秘密，<br />" +
+                            "但遗憾的是，青色深流企划的秘密邮箱阶段已经于2020年2月14日截止。<br />" +
+                            "<span class='animated delay-4s fadeIn'>感谢您对我们的关注和支持，<br />" +
+                            "这个企划将会于2020年内释出更多相关的信息，请您和我们一同见证它的成长。</span>"
+                    }, {
                         title: "欢迎您，前来寄信的客人。",
                         content: "我们的秘密邮箱——也就是您眼前的这座邮筒，<br />" +
                             "是为 Kevinz 计划发行的<strong>“听后即焚”型数字音乐专辑</strong>搜集创作素材而设立的。<br />" +
@@ -317,6 +323,9 @@
             },
 
             submit() {
+                // API endpoint is unable to connect from 2020.2.15.
+                // No need to try it :)
+
                 if (!this.canUserHandle || !this.isUserContactValid || !this.isTextLengthValid) return;
                 this.canUserHandle = false;
                 this.$axios.post(`/mailbox`, qs.stringify({
